@@ -35,18 +35,24 @@ jobs:
           LD_LIBRARY_PATH=. ./bedrock_server > server.log 2>&1 &
           echo "Bedrock server started in background!"
 
-          # 2. 最新バイナリ版のplayitを起動
-          ./playit > playit.log 2>&1 &
+          # 2. playitを起動してログをファイルに吐き出す
+          ./playit --secret_path ./playit.toml > playit.log 2>&1 &
           echo "Playit.gg agent started in background!"
 
-          # 5時間半（330分 = 19800秒）待機
+          # 3. 少し待ってから、playitのログをダンプして画面に出力する（ここでClaim URLやエラーが丸見えになる！）
+          echo "=== Checking Playit Logs ==="
           sleep 30
           cat playit.log
-          sleep 256
+          echo "============================"
+
+          # 残りの時間（約5時間29分）待機
+          # 19800秒（5.5時間）からすでに経過した30秒を引く
+          sleep 19770
 
           # 時間切れになったら安全に停止
           echo "stop" > /proc/$(pgrep bedrock_server)/fd/0 || true
           sleep 10
+
 
       - name: Save World & Push to Repository
         if: always()
