@@ -41,6 +41,9 @@ jobs:
           playit > playit.log 2>&1 &
           echo "Playit.gg agent started in background!"
 
+　　　　　　sleep 60
+          cat playit.log
+
           # 5時間半（330分 = 19800秒）待機
           sleep 19800
 
