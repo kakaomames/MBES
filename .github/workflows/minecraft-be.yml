@@ -34,7 +34,7 @@ jobs:
       - name: Start Playit.gg & Bedrock Server (Max 5.5 hours)
         run: |
           # 1. バックグラウンドでBedrockサーバーを起動
-          LD_LIBRARY_PATH=. ./bedrock_server > server.log 2>&1 &
+          LD_LIBRARY_PATH=. ./bedrock_server > server.log &
           echo "Bedrock server started in background!"
 
 
@@ -42,7 +42,7 @@ jobs:
           # 初回実行時はログにclaim URL（アカウント連携用リンク）が出るか、
           # あるいはあらかじめ生成したsecretがあればそれを使う形になります。
           # まずは簡易的に起動してログを流す形にします。
-          ./playit > playit.log 2>&1 &
+          ./playit > playit.log &
           echo "Playit.gg agent started in background!"
           sleep 60
           cat playit.log
