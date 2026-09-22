@@ -1,0 +1,64 @@
+name: Minecraft Bedrock Cloud Server (BE + Playit.gg)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-bedrock-server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360 # 最大6時間
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip curl libcurl4
+
+      - name: Download & Extract Minecraft Bedrock Server
+        run: |
+          curl -H "User-Agent: Mozilla/5.0" \
+               https://www.minecraft.net/bedrockdedicatedserver/bin-linux/bedrock-server-1.21.51.01.zip \
+               -o bedrock.zip
+          unzip -o bedrock.zip
+          chmod +x bedrock_server
+
+      - name: Download & Setup Playit.gg Agent
+        run: |
+          # Playit.ggの最新Linux用バイナリを取得して実行権限を付与
+          curl -Lo playit https://github.com/playit-cloud/playit-agent/releases/download/v0.15.2/playit-0.15.2_x86_64
+          chmod +x playit
+
+      - name: Start Playit.gg & Bedrock Server (Max 5.5 hours)
+        run: |
+          # 1. バックグラウンドでBedrockサーバーを起動
+          LD_LIBRARY_PATH=. ./bedrock_server > server.log 2>&1 &
+          echo "Bedrock server started in background!"
+
+          # 2. バックグラウンドでPlayit.ggを起動
+          # 初回実行時はログにclaim URL（アカウント連携用リンク）が出るか、
+          # あるいはあらかじめ生成したsecretがあればそれを使う形になります。
+          # まずは簡易的に起動してログを流す形にします。
+          ./playit > playit.log 2>&1 &
+          echo "Playit.gg agent started in background!"
+
+          # 5時間半（330分 = 19800秒）待機
+          sleep 19800
+
+          # 時間切れになったらBedrockサーバーに stop を送って安全に終了
+          echo "stop" > /proc/$(pgrep bedrock_server)/fd/0 || true
+          sleep 10
+
+      - name: Save World & Push to Repository
+        if: always()
+        run: |
+          git config --local user.name "action-bot"
+          git config --local user.email "action@github.com"
+          
+          git add worlds/ server.log playit.log || echo "No changes to add"
+          git commit -m "Auto-save Bedrock world data after session [skip ci]" || echo "No changes to commit"
+          
+          git pull --rebase || true
+          git push
