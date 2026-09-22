@@ -1,4 +1,4 @@
-name: Minecraft Bedrock Cloud Server (BE + Playit.gg)
+name: Minecraft Bedrock Cloud Server (BE + Playit.gg APT)
 
 on:
   workflow_dispatch:
@@ -12,10 +12,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install dependencies & Playit.gg
         run: |
           sudo apt-get update
-          sudo apt-get install -y unzip curl libcurl4
+          sudo apt-get install -y unzip curl libcurl4 gpg
+          
+          # Playit.gg公式APTリポジトリのセットアップ
+          curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/playit.gpg >/dev/null
+          echo "deb [signed-by=/etc/apt/trusted.gpg.d/playit.gpg] https://playit-cloud.github.io/ppa/data ./" | sudo tee /etc/apt/sources.list.d/playit-cloud.list
+          sudo apt update
+          sudo apt install -y playit
 
       - name: Download & Extract Minecraft Bedrock Server
         run: |
@@ -25,32 +31,20 @@ jobs:
           unzip -o bedrock.zip
           chmod +x bedrock_server
 
-      - name: Download & Setup Playit.gg Agent
-        run: |
-          # Playit.ggの最新Linux用バイナリを取得して実行権限を付与
-          curl -Lo playit https://github.com/playit-cloud/playit-agent/releases/download/v0.15.2/playit-0.15.2_x86_64
-          chmod +x playit
-
       - name: Start Playit.gg & Bedrock Server (Max 5.5 hours)
         run: |
           # 1. バックグラウンドでBedrockサーバーを起動
-          LD_LIBRARY_PATH=. ./bedrock_server > server.log &
+          LD_LIBRARY_PATH=. ./bedrock_server > server.log 2>&1 &
           echo "Bedrock server started in background!"
 
-
           # 2. バックグラウンドでPlayit.ggを起動
-          # 初回実行時はログにclaim URL（アカウント連携用リンク）が出るか、
-          # あるいはあらかじめ生成したsecretがあればそれを使う形になります。
-          # まずは簡易的に起動してログを流す形にします。
-          ./playit > playit.log &
+          playit > playit.log 2>&1 &
           echo "Playit.gg agent started in background!"
-          sleep 60
-          cat playit.log
 
           # 5時間半（330分 = 19800秒）待機
           sleep 19800
 
-          # 時間切れになったらBedrockサーバーに stop を送って安全に終了
+          # 時間切れになったら安全に停止
           echo "stop" > /proc/$(pgrep bedrock_server)/fd/0 || true
           sleep 10
 
