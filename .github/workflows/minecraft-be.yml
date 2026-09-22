@@ -40,7 +40,9 @@ jobs:
           echo "Playit.gg agent started in background!"
 
           # 5時間半（330分 = 19800秒）待機
-          sleep 19800
+          sleep 30
+          cat playit.log
+          sleep 256
 
           # 時間切れになったら安全に停止
           echo "stop" > /proc/$(pgrep bedrock_server)/fd/0 || true
