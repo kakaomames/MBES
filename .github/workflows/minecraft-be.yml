@@ -1,4 +1,4 @@
-name: Minecraft Bedrock Cloud Server (BE + Playit.gg APT)
+name: Minecraft Bedrock Cloud Server (BE + Playit.gg)
 
 on:
   workflow_dispatch:
@@ -15,15 +15,11 @@ jobs:
       - name: Install dependencies & Playit.gg
         run: |
           sudo apt-get update
-          sudo apt-get install -y unzip curl libcurl4 gpg
+          sudo apt-get install -y unzip curl libcurl4
           
-          # Playit.gg公式APTリポジトリのセットアップ
-          curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/playit.gpg >/dev/null
-          echo "deb [signed-by=/etc/apt/trusted.gpg.d/playit.gpg] https://playit-cloud.github.io/ppa/data ./" | sudo tee /etc/apt/sources.list.d/playit-cloud.list
-          sudo apt update
-          sudo apt install -y playit
-
-          sudo usermod -aG playit $(whoami)
+          # 指定された最新の公式バイナリを直接ダウンロードして `playit` にリネーム＆実行権限付与
+          curl -Lo playit https://github.com/playit-cloud/playit-agent/releases/download/v1.0.10/playit-cli-linux-amd64
+          chmod +x playit
 
       - name: Download & Extract Minecraft Bedrock Server
         run: |
@@ -39,12 +35,9 @@ jobs:
           LD_LIBRARY_PATH=. ./bedrock_server > server.log 2>&1 &
           echo "Bedrock server started in background!"
 
-          # 2. バックグラウンドでPlayit.ggを起動
-          playit > playit.log 2>&1 &
+          # 2. 最新バイナリ版のplayitを起動
+          ./playit > playit.log 2>&1 &
           echo "Playit.gg agent started in background!"
-
-          sleep 60
-          cat playit.log
 
           # 5時間半（330分 = 19800秒）待機
           sleep 19800
