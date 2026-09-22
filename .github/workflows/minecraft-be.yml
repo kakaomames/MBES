@@ -23,6 +23,8 @@ jobs:
           sudo apt update
           sudo apt install -y playit
 
+          sudo usermod -aG playit $(whoami)
+
       - name: Download & Extract Minecraft Bedrock Server
         run: |
           curl -H "User-Agent: Mozilla/5.0" \
